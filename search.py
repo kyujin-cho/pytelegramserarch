@@ -7,7 +7,6 @@ from asyncio import run, get_event_loop, set_event_loop, new_event_loop
 import click
 import sys
 import re
-import aiofiles
 import signal
 import functools
 
