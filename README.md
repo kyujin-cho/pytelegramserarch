@@ -4,7 +4,9 @@
 - MongoDB installed and running on `localhost:27017`
 
 ## Installation
-1. `pip install -r requirements.txt`
+0. `brew install mongodb`
+1. `mongod` (skip if mongodb instance is already running)
+2. `pip install -r requirements.txt`
 
 ## How to run
 - `python search.py --help`
