@@ -15,6 +15,12 @@ API_ID = '17656'
 API_HASH = 'f311386142ab9bef2851faeefc7d4ba9'
 
 def print_if_found(dicted: dict, kwd: re.Pattern) -> int:
+    '''Call mprint() if given pattern is found from dicted
+    :param dict dicted: Message serialized to dictionary
+    :param re.Pattern kwd: pattern to search inside message
+    :returns: start position if found, -1 if not found
+    '''
+
     msg = dicted['message']
     chatId = dicted['id']
 
@@ -29,16 +35,34 @@ def print_if_found(dicted: dict, kwd: re.Pattern) -> int:
     return -1
 
 def mprint(msg: str, start: int, end: int, chatId: int):
+    '''Prints abstracted message
+    :param str msg: Message to print
+    :param int start: Keyword start location
+    :param int end: Keyword end location
+    :param int chatId: Chat ID
+    '''
+
     abstract = '...' + msg[start-4:start] + msg[start:end+1] + msg[end+1:end+5] + '...'
     print(f'found at chatId {chatId}: {abstract}')
 
 def rmprint(dicted: dict):
+    '''Prints full message
+    :param dict dicted: Message serialized to dictionary
+    '''
+
     chatId = dicted['id']
     msg = dicted['message']
     print(f'found at chatId {chatId}: {msg}')
     return msg
 
 def message_to_dict(msg: message.Message) -> dict:
+    '''Converts telethon Message to dictionary. 
+    Required when inserting into mongodb collection since Message object is not serializable to BSON.
+
+    :param message.Message msg: Message object to serialize
+    :returns: Serialized dictionary
+    '''
+    
     msg.to_dict()
     return {
         'id': msg.id,
@@ -77,7 +101,7 @@ async def search(chat_id: str, kwd: str, from_cache: bool=False, dump: bool=Fals
             fw.close()
         return
 
-    # Compile regex pattern to re.Compile object
+    # Compile regex pattern to re.Pattern object
     kwd = re.compile(kwd)
     
     # Fetch latest cached message ID; then only find newer messages than this message
