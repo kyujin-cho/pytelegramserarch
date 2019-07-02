@@ -55,6 +55,8 @@ async def search(chat_id: str, kwd: str, from_cache: bool=False, dump: bool=Fals
     await client.start()
     mongo = motor_asyncio.AsyncIOMotorClient()
     collection = mongo.tele_db.messages
+
+    # Try to find from cached messages in MongoDB
     from_cached = collection.find( { 'message': { '$regex': kwd } } ).sort([('id', 1)])
     await from_cached.fetch_next
     first_msg = from_cached.next_object()
@@ -69,14 +71,16 @@ async def search(chat_id: str, kwd: str, from_cache: bool=False, dump: bool=Fals
                 msg = message['message']
                 fw.write(f'{chatId}:{msg}\n')
     
-    
+    # Stop if from_cache option enabled
     if from_cache:
         if dump:
             fw.close()
         return
 
+    # Compile regex pattern to re.Compile object
     kwd = re.compile(kwd)
     
+    # Fetch latest cached message ID; then only find newer messages than this message
     latest_cursor = collection.find({}).sort([('id', -1)])
     await latest_cursor.fetch_next
     latest_msg = latest_cursor.next_object()
@@ -102,20 +106,22 @@ async def search(chat_id: str, kwd: str, from_cache: bool=False, dump: bool=Fals
                 sys.stdout.write(u'\u001b[' + str(found) + 'B')
                 sys.stdout.flush()
 
+            # Add fetched message object to MongoDB collection
             await collection.insert_one(dicted)
             index = print_if_found(dicted, kwd)
 
             if index != -1:
                 found += 1
-                message = dicted['message']
-                fw.write(f'{chatId}:{message}\n')
+                if dump:
+                    message = dicted['message']
+                    fw.write(f'{chatId}:{message}\n')
 
             if found > 0:
                 sys.stdout.write(u'\u001b[' + str(found) + 'A')
             sys.stdout.flush()
 
     first_id = first_msg['id'] if first_msg else 0
-    # Then previous uncached messages
+    # Then fetch messages uncached previously
     async for server_message in client.iter_messages(entity, offset_id=first_id):
         dicted = message_to_dict(server_message)
         chatId = dicted['id']
@@ -134,19 +140,18 @@ async def search(chat_id: str, kwd: str, from_cache: bool=False, dump: bool=Fals
 
         if index != -1:
             found += 1
-            message = dicted['message']
-            fw.write(f'{chatId}:{message}\n')
+            if dump:
+                message = dicted['message']
+                fw.write(f'{chatId}:{message}\n')
 
         if found > 0:
             sys.stdout.write(u'\u001b[' + str(found) + 'A')
         sys.stdout.flush()
 
-def close_file_handler():
+# SIGINT HANDLER
+def signal_handler(name):
     if fw != None:
         fw.close()
-
-def signal_handler(name):
-    close_file_handler()
     exit()
 
 fw = None
