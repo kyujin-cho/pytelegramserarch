@@ -175,3 +175,4 @@ dmypy.json
 *.session
 .python-version
 chat.log
+.vscode/settings.json
